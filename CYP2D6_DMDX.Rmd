@@ -1,0 +1,94 @@
+---
+title: "Enhancer DM/DX Analysis"
+subtitle: Analysis includes samples heterzygous for null alleles (CYP2D6 \*3, \*4,
+  \*5, \*6 or \*40)
+output: rmarkdown::github_document
+always_allow_html: yes
+---
+
+```{r include=FALSE}
+library(plotly)
+library(tidyverse)
+library(knitr)
+data <- read_csv(file.choose())
+df <- data %>% separate(CMH_Diplotype2, into = c('Allele_1','Allele_2'), sep = "/")
+#star29_41 <- filter(data, grepl("\\*29|\\*41", CMH_Diplotype2))
+#star2 <- filter(data, grepl("\\*2", CMH_Diplotype2))
+star2 <- filter(df, df$'*2' == 1)
+star2_filter <- filter(star2, !(star2$Allele_1 == star2$Allele_2)) 
+star2_filter <- filter(star2_filter, !(star2_filter$Allele_1 == '*1'|star2_filter$Allele_2 == '*1'))
+star2_filter <- filter(star2_filter, (star2_filter$Allele_1 == '*3'|star2_filter$Allele_2 == '*3'|star2_filter$Allele_1 == '*4'|star2_filter$Allele_2 == '*4'|star2_filter$Allele_1 == '*5'|star2_filter$Allele_2 == '*5'|star2_filter$Allele_1 == '*6'|star2_filter$Allele_2 == '*6'|star2_filter$Allele_1 == '*40'|star2_filter$Allele_2 == '*40'|star2_filter$Allele_1 == '*68+*4'|star2_filter$Allele_2 == '*68+*4'))
+star2_filter <- filter(star2_filter, !(star2_filter$Allele_1 == '*2x2'|star2_filter$Allele_2 == '*2x2'|star2_filter$Allele_1 == '*2Ax2'|star2_filter$Allele_2 == '*2Ax2'))
+star2_filter <- filter(star2_filter, !(star2_filter$Allele_1 == '*69'|star2_filter$Allele_2 == '*69'))
+star2_filter <- filter(star2_filter, !(star2_filter$Allele_1 == '*10'|star2_filter$Allele_2 == '*10'))
+star40 <- filter(star2_filter, star2_filter$Allele_2 == '*40')
+star40 <-filter(star40, star40$CMH_Diplotype == '*2A')
+star2_filter <- filter(star2_filter, !(star2_filter$Allele_2 == '*40'))
+star2_nofunction <- rbind(star2_filter, star40)
+star2_nofunction_dmdx <- drop_na(star2_nofunction, DM_DX)
+star2_nofunction_dmdx_enh2 <- drop_na(star2_nofunction_dmdx, Enhancer_2)
+
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+star2_nofunction_dmdx_enh2$Enhancer_2 <- factor(star2_nofunction_dmdx_enh2$Enhancer_2)
+star2_nofunction_dmdx$Enhancer_1 <- factor(star2_nofunction_dmdx$Enhancer_1)
+star2_nofunction_dmdx$Phase_Diplotypes <- factor(star2_nofunction_dmdx$Phase_Diplotypes)
+
+kable(table(star2_nofunction_dmdx$Enhancer_1, star2_nofunction_dmdx$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g <- ggplot(star2_nofunction_dmdx, aes(x= Enhancer_1, y = log10(DM_DX))) + geom_boxplot() + ggtitle("rs16947 + Enhancer 1 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g)
+t.test(log10(star2_nofunction_dmdx$DM_DX)~star2_nofunction_dmdx$Enhancer_1)
+
+
+kable(table(star2_nofunction_dmdx$Enhancer_2, star2_nofunction_dmdx$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g1 <- ggplot(star2_nofunction_dmdx_enh2, aes(x= Enhancer_2, y = log10(DM_DX))) + geom_boxplot() + ggtitle("rs16947 + Enhancer 2 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g1)
+t.test(log10(star2_nofunction_dmdx_enh2$DM_DX)~star2_nofunction_dmdx_enh2$Enhancer_2)
+
+star2_only <- filter(star2_nofunction_dmdx_enh2, (star2_nofunction_dmdx_enh2$Allele_1 == '*2'|star2_nofunction_dmdx_enh2$Allele_2 == '*2'|star2_nofunction_dmdx_enh2$Allele_1 == '*2A'|star2_nofunction_dmdx_enh2$Allele_2 == '*2A'))
+kable(table(star2_only$Enhancer_2, star2_only$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g2 <- ggplot(star2_only, aes(x= Enhancer_2, y = log10(DM_DX))) + geom_boxplot() + ggtitle("*2 Haplotype + Enhancer 2 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g2)
+t.test(log10(star2_only$DM_DX)~star2_only$Enhancer_2)
+
+star2_only_bio <- filter(star2_only, grepl("Biomarker*", id))
+kable(table(star2_only_bio$Enhancer_2, star2_only_bio$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g3 <- ggplot(star2_only_bio, aes(x= Enhancer_2, y = log10(DM_DX))) + geom_boxplot() + ggtitle("Biomarker samples *2 Haplotype + Enhancer 2 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g3)
+t.test(log10(star2_only_bio$DM_DX)~star2_only_bio$Enhancer_2)
+
+star2_nofunction_dmdx_enh2_bio <- filter(star2_nofunction_dmdx_enh2, grepl("Biomarker*", id))
+kable(table(star2_nofunction_dmdx_enh2_bio$Enhancer_2, star2_nofunction_dmdx_enh2_bio$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g4 <- ggplot(star2_nofunction_dmdx_enh2_bio, aes(x= Enhancer_2, y = log10(DM_DX))) + geom_boxplot() + ggtitle("rs16947 + Enhancer 2 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g4)
+t.test(log10(star2_nofunction_dmdx_enh2_bio$DM_DX)~star2_nofunction_dmdx_enh2_bio$Enhancer_2)
+
+star2_nofunction_dmdx_enh2_bio_no17 <- filter(star2_nofunction_dmdx_enh2_bio, !(star2_nofunction_dmdx_enh2_bio$Allele_2 == '*17'|star2_nofunction_dmdx_enh2_bio$Allele_1 == '*17'))
+kable(table(star2_nofunction_dmdx_enh2_bio_no17$Enhancer_2, star2_nofunction_dmdx_enh2_bio_no17$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g5 <- ggplot(star2_nofunction_dmdx_enh2_bio_no17, aes(x= Enhancer_2, y = log10(DM_DX))) + geom_boxplot() + ggtitle("rs16947 + Enhancer 2 Allele (Excluding samples with *17)") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g5)
+t.test(log10(star2_nofunction_dmdx_enh2_bio_no17$DM_DX)~star2_nofunction_dmdx_enh2_bio_no17$Enhancer_2)
+
+star2_nofunction_dmdx_bio <- filter(star2_nofunction_dmdx, grepl("Biomarker*", id))
+kable(table(star2_nofunction_dmdx_bio$Enhancer_1, star2_nofunction_dmdx_bio$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g6 <- ggplot(star2_nofunction_dmdx_bio, aes(x= Enhancer_1, y = log10(DM_DX))) + geom_boxplot() + ggtitle("Biomarker rs16947 + Enhancer 1 Allele") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g6)
+t.test(log10(star2_nofunction_dmdx_bio$DM_DX)~star2_nofunction_dmdx_bio$Enhancer_1)
+#mod <- lm(log10(DM_DX)~Enhancer_1 + Phase_Diplotypes, data = star2_nofunction_dmdx)
+
+star2_nofunction_dmdx_bio_no17 <- filter(star2_nofunction_dmdx_bio, !(star2_nofunction_dmdx_bio$Allele_2 == '*17'|star2_nofunction_dmdx_bio$Allele_1 == '*17'|star2_nofunction_dmdx_bio$Allele_2 == '*59'|star2_nofunction_dmdx_bio$Allele_1 == '*59'))
+kable(table(star2_nofunction_dmdx_bio_no17$Enhancer_1, star2_nofunction_dmdx_bio_no17$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer')
+g7 <- ggplot(star2_nofunction_dmdx_bio_no17, aes(x= Enhancer_1, y = log10(DM_DX))) + geom_boxplot() + ggtitle("Biomarker rs16947 + Enhancer 1 Allele(No *17 or *59)") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g7)
+t.test(log10(star2_nofunction_dmdx_bio_no17$DM_DX)~star2_nofunction_dmdx_bio_no17$Enhancer_1)
+
+star2_nofunction_dmdx_no1759 <- filter(star2_nofunction_dmdx, !(star2_nofunction_dmdx$Allele_2 == '*17'|star2_nofunction_dmdx$Allele_1 == '*17'|star2_nofunction_dmdx$Allele_2 == '*59'|star2_nofunction_dmdx$Allele_1 == '*59'))
+kable(table(star2_nofunction_dmdx_no1759$Enhancer_1, star2_nofunction_dmdx_no1759$CMH_Diplotype), caption = 'Distribution of haplotyes with Enhancer') 
+g8 <- ggplot(star2_nofunction_dmdx_no1759, aes(x= Enhancer_1, y = log10(DM_DX))) + geom_boxplot() + ggtitle("All samples rs16947 + Enhancer (No 17/59)") + geom_jitter(width = .2, aes(colour = CMH_Diplotype)) + labs(colour = "Haplotype")
+ggplotly(g8) 
+t.test(log10(star2_nofunction_dmdx_no1759$DM_DX)~star2_nofunction_dmdx_no1759$Enhancer_1)
+```
+
