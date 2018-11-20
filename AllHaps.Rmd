@@ -1,0 +1,30 @@
+---
+title: "Activity"
+output: html_document
+---
+```{r setup, include=FALSE}
+library(plotly)
+library(tidyverse)
+library(knitr)
+
+CYP2D6_Data <- read_csv("~/RData/DMDX/CYP2D6-Data.csv")
+df <- CYP2D6_Data %>% separate(CMH_Diplotype2, into = c('Allele_1','Allele_2'), sep = "/")
+filter <- drop_na(df, DM_DX)
+filter <- filter(filter, grepl('^\\*3$', Allele_2)|grepl('^\\*3$', Allele_1)|grepl("^\\*4$", Allele_2)|grepl("^\\*4$", Allele_1)|grepl("^\\*5$", Allele_2)|grepl("^\\*5$", Allele_1)|grepl("^\\*6$", Allele_2)|grepl("^\\*6$", Allele_1)|grepl("^\\*40$", Allele_2)|grepl("^\\*40$", Allele_1))
+filter <- filter(filter, !(grepl('^\\*3$', CMH_Diplotype)|grepl("^\\*4$", CMH_Diplotype)|grepl("^\\*5$", CMH_Diplotype)|grepl("^\\*6$", CMH_Diplotype)|grepl("^\\*40$", CMH_Diplotype)|grepl("^\\*4x2$", CMH_Diplotype)|grepl("^\\*4M$", CMH_Diplotype)|grepl("^\\*68+4$", CMH_Diplotype)))
+
+filter$Enhancer_1 <- factor(filter$Enhancer_1)
+filter$CMH_Diplotype <- factor(filter$CMH_Diplotype)
+filter$Diplotype <- (paste(filter$Allele_1, "/", filter$Allele_2))
+filter$idfactor <- factor(substring(filter$id, 1,2))
+
+```
+
+```{r fig.width=12, fig.height=8}
+g <- ggplot(filter, aes(x=CMH_Diplotype, y = log10(DM_DX),text=id,diplo=Diplotype)) + geom_boxplot() + ggtitle("DM/DX Comparison") + geom_jitter(width = .2) + labs(colour = "Haplotype") + theme(axis.text.x = element_text(angle=90, hjust=1))
+ggplotly(g, tooltip=c("text","diplo"))
+
+g <- ggplot(filter, aes(x=idfactor, y = log10(DM_DX))) + geom_boxplot() + ggtitle("Study Comparison") + scale_x_discrete(breaks=c("Bi","CM","Co","Mo"), labels=c("Biomarker","CMH","Cologne","Montane"))
+ggplotly(g)%>%layout(boxmode = "group")
+```
+
